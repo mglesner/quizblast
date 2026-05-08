@@ -374,7 +374,23 @@ function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.add(
 function stab(id){['tq','ts'].forEach(t=>document.getElementById(t).classList.toggle('hidden',t!==id));document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('act',['tq','ts'][i]===id));}
 function notif(m,c='var(--a3)'){const n=document.createElement('div');n.className='notif';n.style.borderLeft=`3px solid ${c}`;n.textContent=m;document.body.appendChild(n);setTimeout(()=>n.remove(),3000);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
+function saveQs(){
+  try{localStorage.setItem('qb_questions',JSON.stringify(S.qs));
+  localStorage.setItem('qb_cfg',JSON.stringify(S.cfg));}catch(e){}
+}
+function loadQs(){
+  try{
+    const q=localStorage.getItem('qb_questions');
+    const c=localStorage.getItem('qb_cfg');
+    if(q)S.qs=JSON.parse(q);
+    if(c){S.cfg=JSON.parse(c);
+      const t=document.getElementById('qtitle');
+      const tp=document.getElementById('qtime');
+      if(t)t.value=S.cfg.title||'Min QuizBlast';
+      if(tp)tp.value=S.cfg.tpq||60;
+    }
+  }catch(e){}
+}
 function renderEd(){
   const el=document.getElementById('qlist');
   if(!S.qs.length){el.innerHTML='<p style="color:var(--t2);text-align:center;padding:28px 0;font-weight:600">Ingen spørgsmål endnu — tilføj nedenfor!</p>';return;}
@@ -621,7 +637,8 @@ function showPLB(d){
   }
 
   updateModeBadge();
-  renderEd();
+loadQs();
+renderEd();
 })();
 </script>
 </body>
