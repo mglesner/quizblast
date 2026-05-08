@@ -108,36 +108,11 @@ select option{background:#26264a;color:#fff}
 @keyframes fi{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
-/* Setup modal for JSONBin key */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
-.modal{background:var(--sur);border-radius:14px;padding:28px;max-width:480px;width:100%;border:1px solid rgba(255,255,255,.2)}
+
 </style>
 </head>
 <body>
 <canvas id="confC"></canvas>
-
-<!-- SETUP MODAL (first run) -->
-<div class="modal-overlay hidden" id="modal-setup">
-  <div class="modal">
-    <h2 class="nf" style="color:#fff;margin-bottom:8px">⚡ QuizBlast — Opsætning</h2>
-    <p style="color:var(--t2);margin-bottom:18px;font-size:.95rem;line-height:1.5">For at spille på tværs af enheder skal du bruge en <strong style="color:#fff">gratis JSONBin.io API-nøgle</strong>. Det tager 1 minut:</p>
-    <ol style="color:var(--t2);font-size:.9rem;line-height:1.8;margin-bottom:18px;padding-left:18px">
-      <li>Gå til <a href="https://jsonbin.io" target="_blank" style="color:var(--a3)">jsonbin.io</a> og opret en gratis konto</li>
-      <li>Klik på <strong style="color:#fff">API Keys</strong> i menuen</li>
-      <li>Kopier din <strong style="color:#fff">Master Key</strong> (starter med <code style="color:var(--a2)">$2b$...</code>)</li>
-      <li>Indsæt den herunder og klik Gem</li>
-    </ol>
-    <div class="fld">
-      <span class="lbl">JSONBin Master Key</span>
-      <input id="api-key-input" placeholder="$2b$10$..." type="password">
-    </div>
-    <div style="display:flex;gap:10px;margin-top:4px">
-      <button class="btn bs" onclick="saveApiKey()" style="flex:1">💾 Gem og start</button>
-      <button class="btn bg bSm" onclick="useLocalMode()">Kun lokal (1 enhed)</button>
-    </div>
-    <p id="key-err" style="color:var(--a1);font-size:.82rem;margin-top:10px;display:none"></p>
-  </div>
-</div>
 
 <!-- HOME -->
 <div id="screen-home" class="screen">
@@ -151,10 +126,7 @@ select option{background:#26264a;color:#fff}
       <button class="btn bp bBig" onclick="go('host-setup')">🎯 Vær vært</button>
       <button class="btn bg bBig" onclick="go('join')">🎮 Deltag i quiz</button>
     </div>
-    <div style="margin-top:18px">
-      <button class="btn bg bSm" onclick="showSetup()" style="font-size:.75rem;opacity:.7">⚙️ Skift API-nøgle</button>
-      <div id="mode-badge" style="margin-top:8px;font-size:.78rem;color:var(--t2)"></div>
-    </div>
+
   </div>
 </div>
 
@@ -357,74 +329,30 @@ select option{background:#26264a;color:#fff}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 // ============================================================
-//  STORAGE LAYER — JSONBin.io (multi-device) or localStorage
+//  STORAGE LAYER — Firebase Realtime Database
 // ============================================================
-let API_KEY = localStorage.getItem('qb_apikey') || '';
-let LOCAL_MODE = localStorage.getItem('qb_localmode') === '1';
-const BINS = {}; // gameCode -> binId (host creates bin, stored here)
+const FB_URL='https://quizblast-ellie50-default-rtdb.firebaseio.com';
 
-function showSetup(){document.getElementById('modal-setup').classList.remove('hidden');}
-function saveApiKey(){
-  const k=document.getElementById('api-key-input').value.trim();
-  if(!k){document.getElementById('key-err').style.display='block';document.getElementById('key-err').textContent='Indsæt venligst din API-nøgle.';return;}
-  API_KEY=k;LOCAL_MODE=false;
-  localStorage.setItem('qb_apikey',k);localStorage.removeItem('qb_localmode');
-  document.getElementById('modal-setup').classList.add('hidden');
-  updateModeBadge();notif('API-nøgle gemt ✅');
-}
-function useLocalMode(){
-  LOCAL_MODE=true;API_KEY='';
-  localStorage.setItem('qb_localmode','1');localStorage.removeItem('qb_apikey');
-  document.getElementById('modal-setup').classList.add('hidden');
-  updateModeBadge();notif('Lokal tilstand — kun 1 enhed ad gangen');
-}
 function updateModeBadge(){
   const el=document.getElementById('mode-badge');
-  if(LOCAL_MODE)el.textContent='⚠️ Lokal tilstand — alle på samme enhed/browser';
-  else if(API_KEY)el.textContent='✅ Flerenheds-tilstand aktiv';
-  else el.textContent='';
+  if(el)el.textContent='';
 }
 
-// JSONBin helpers
-async function binCreate(data){
-  const r=await fetch('https://api.jsonbin.io/v3/b',{method:'POST',headers:{'Content-Type':'application/json','X-Master-Key':API_KEY,'X-Bin-Private':'false'},body:JSON.stringify(data)});
-  if(!r.ok)throw new Error('JSONBin create failed: '+r.status);
-  const j=await r.json();return j.metadata.id;
-}
-async function binRead(id){
-  const r=await fetch(`https://api.jsonbin.io/v3/b/${id}/latest`,{headers:{'X-Master-Key':API_KEY}});
-  if(!r.ok)return null;
-  const j=await r.json();return j.record;
-}
-async function binWrite(id,data){
-  const r=await fetch(`https://api.jsonbin.io/v3/b/${id}`,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},body:JSON.stringify(data)});
-  if(!r.ok)throw new Error('JSONBin write failed');
-}
-
-// Unified storage API
-const LS_PREFIX='qb_game_';
 async function storeCreate(gameCode, data){
-  if(LOCAL_MODE||!API_KEY){localStorage.setItem(LS_PREFIX+gameCode,JSON.stringify(data));BINS[gameCode]='local';return;}
-  const id=await binCreate(data);BINS[gameCode]=id;
-  localStorage.setItem('qb_bin_'+gameCode,id); // persist bin id
+  const r=await fetch(FB_URL+'/games/'+gameCode+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  if(!r.ok)throw new Error('Firebase write failed: '+r.status);
 }
 async function storeRead(gameCode){
-  const binId=BINS[gameCode]||localStorage.getItem('qb_bin_'+gameCode);
-  if(!binId||binId==='local'||LOCAL_MODE||!API_KEY){
-    const raw=localStorage.getItem(LS_PREFIX+gameCode);return raw?JSON.parse(raw):null;
-  }
-  BINS[gameCode]=binId;
-  return await binRead(binId);
+  const r=await fetch(FB_URL+'/games/'+gameCode+'.json');
+  if(!r.ok)return null;
+  return await r.json();
 }
 async function storeWrite(gameCode, data){
-  const binId=BINS[gameCode]||localStorage.getItem('qb_bin_'+gameCode);
-  if(!binId||binId==='local'||LOCAL_MODE||!API_KEY){localStorage.setItem(LS_PREFIX+gameCode,JSON.stringify(data));return;}
-  await binWrite(binId,data);
+  const r=await fetch(FB_URL+'/games/'+gameCode+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  if(!r.ok)throw new Error('Firebase write failed: '+r.status);
 }
 async function storeDelete(gameCode){
-  localStorage.removeItem(LS_PREFIX+gameCode);
-  localStorage.removeItem('qb_bin_'+gameCode);
-  delete BINS[gameCode];
+  await fetch(FB_URL+'/games/'+gameCode+'.json',{method:'DELETE'});
 }
 
 // ============================================================
@@ -687,27 +615,11 @@ function showPLB(d){
   const joinCode=params.get('join');
   if(joinCode){
     // Go straight to join screen with code pre-filled
-    if(!API_KEY && !LOCAL_MODE){
-      // Need storage config first — save join code for after setup
-      localStorage.setItem('qb_pending_join',joinCode.toUpperCase());
-      showSetup();
-    } else {
-      document.getElementById('jinp').value=joinCode.toUpperCase();
-      go('join');
-    }
-    return;
-  }
-
-  // Check if we returned from setup with a pending join
-  const pending=localStorage.getItem('qb_pending_join');
-  if(pending && (API_KEY||LOCAL_MODE)){
-    localStorage.removeItem('qb_pending_join');
-    document.getElementById('jinp').value=pending;
+    document.getElementById('jinp').value=joinCode.toUpperCase();
     go('join');
     return;
   }
 
-  if(!API_KEY && !LOCAL_MODE){showSetup();}
   updateModeBadge();
   renderEd();
 })();
