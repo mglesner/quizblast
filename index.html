@@ -363,7 +363,7 @@ const AVS=['🦊','🐺','🐸','🦁','🐯','🐻','🦄','🐼','🦋','🐙'
 const IC=['🔴','🔵','🟢','🟡'],COL=['#d63031','#0984e3','#00b894','#e17055'];
 const CIRC=182.2;
 
-let S={mode:'host',code:null,qs:[],cfg:{title:'Ellie's 50th Birthday Quiz',tpq:60},cq:0,phase:'lobby',tim:null,tl:60,players:{},ans:{},pid:null,pname:'',pav:'🦊',psc:0,selav:0};
+let S={mode:'host',code:null,qs:[],cfg:{title:"Ellie's 50th Birthday Quiz",tpq:60},cq:0,phase:'lobby',tim:null,tl:60,players:{},ans:{},pid:null,pname:'',pav:'🦊',psc:0,selav:0};
 
 function confetti(){
   const c=document.getElementById('confC');c.width=innerWidth;c.height=innerHeight;
@@ -388,7 +388,7 @@ function loadQs(){
     if(c){S.cfg=JSON.parse(c);
       const t=document.getElementById('qtitle');
       const tp=document.getElementById('qtime');
-      if(t)t.value=S.cfg.title||'Ellie's 50th Birthday Quiz';
+      if(t)t.value=S.cfg.title||"Ellie's 50th Birthday Quiz";
       if(tp)tp.value=S.cfg.tpq||60;
     }
   }catch(e){}
@@ -417,7 +417,7 @@ function loadSample(){S.qs=[{text:'Hvad er hovedstaden i Danmark?',answers:['Osl
 async function startHost(){
   const q=S.qs.filter(q=>q.text.trim()&&q.answers.every(a=>a.trim()));
   if(!q.length){notif('Add at least one complete question!','var(--a1)');return;}
-  S.qs=q;S.cfg.title=document.getElementById('qtitle').value||'Ellie's 50th Birthday Quiz';
+  S.qs=q;S.cfg.title=document.getElementById('qtitle').value||"Ellie's 50th Birthday Quiz";
   S.cfg.tpq=parseInt(document.getElementById('qtime').value)||60;
   S.code=Math.random().toString(36).slice(2,6).toUpperCase();
   S.players={};S.cq=0;S.phase='lobby';
