@@ -365,7 +365,6 @@ const CIRC=182.2;
 
 let S={mode:'host',code:null,qs:[],cfg:{title:"Ellie's 50th Birthday Quiz",tpq:60},cq:0,phase:'lobby',tim:null,tl:60,players:{},ans:{},pid:null,pname:'',pav:'🦊',psc:0,selav:0};
 
-function confetti(){
 function playLB(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
@@ -395,6 +394,7 @@ function playFanfare(){
     });
   }catch(e){}
 }
+function confetti(){
   const c=document.getElementById('confC');c.width=innerWidth;c.height=innerHeight;
   let ps=Array.from({length:120},()=>({x:Math.random()*c.width,y:-10,r:Math.random()*7+4,col:['#ff6b8a','#ffc145','#5ef0e8','#c4b5fd','#fff','#00e0a0'][Math.floor(Math.random()*6)],vy:Math.random()*4+2,vx:(Math.random()-.5)*3,rot:Math.random()*360,rv:(Math.random()-.5)*6,lf:1}));
   let fr=0;(function draw(){const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);ps.forEach(p=>{x.save();x.translate(p.x,p.y);x.rotate(p.rot*Math.PI/180);x.fillStyle=p.col;x.globalAlpha=p.lf;x.fillRect(-p.r/2,-p.r/2,p.r,p.r*.6);x.restore();p.x+=p.vx;p.y+=p.vy;p.rot+=p.rv;p.vy+=.07;p.lf-=.008;});ps=ps.filter(p=>p.lf>0&&p.y<c.height+20);if(ps.length>0&&fr++<300)requestAnimationFrame(draw);else c.getContext('2d').clearRect(0,0,c.width,c.height);})();
